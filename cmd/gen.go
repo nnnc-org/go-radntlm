@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 
 	"github.com/spf13/cobra"
+	"github.com/pterm/pterm"
 
 	"github.com/nnnc-org/go-radntlm/internal/crypto"
 )
@@ -20,6 +21,11 @@ var genCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		usr, _ := cmd.Flags().GetString("username")
 		pwd, _ := cmd.Flags().GetString("password")
+
+		if pwd == "" {
+			// ask for password if not provided, hide user input for security
+			pwd, _ = pterm.DefaultInteractiveTextInput.WithMask("*").Show("Enter password")
+		}
 
 		hash := hex.EncodeToString(crypto.GetNTHash(pwd))
 
@@ -41,6 +47,4 @@ func init() {
 
 	genCmd.Flags().StringP("username", "u", "", "Username")
 	genCmd.Flags().StringP("password", "p", "", "Plaintext password")
-
-	genCmd.MarkFlagRequired("password")
 }
