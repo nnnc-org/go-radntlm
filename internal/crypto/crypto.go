@@ -8,6 +8,17 @@ import (
 	"strings"
 )
 
+func CreateNTSessionKey(nthash string) string {
+	// The NT hash (itself an MD4 hash of the user password) is MD4 hashed, resulting in the 16 byte NTLMv1 Sesssion Key
+	//key := GetNTHash(nthash)
+	ntHash, _ := hex.DecodeString(nthash)
+	h := md4.New()
+	h.Write(ntHash)
+	sessionKey := h.Sum(nil)
+
+	return strings.ToUpper(hex.EncodeToString(sessionKey))
+}
+
 func GetNTHash(password string) []byte {
 	// NT hash uses UTF-16LE encoded password
 	utf16le := utf16FromString(password)
@@ -25,7 +36,6 @@ func utf16FromString(s string) []byte {
 	}
 	return utf
 }
-
 
 func createDESKey(key7 []byte) []byte {
 	key := make([]byte, 8)

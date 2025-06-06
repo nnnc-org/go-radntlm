@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 	"time"
+	"fmt"
 
 	"github.com/spf13/cobra"
 
@@ -52,7 +53,9 @@ var authCmd = &cobra.Command{
 				os.Exit(3)
 			}
 			if valid {
-				cmd.Println("Authentication successful")
+				// return nt key
+				ntKey := crypto.CreateNTSessionKey(hash)
+				fmt.Fprintln(cmd.OutOrStdout(), "NT_KEY:", ntKey)
 				os.Exit(0)
 			} else {
 				cmd.Println("Incorrect Password")
