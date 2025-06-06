@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"os"
+	"time"
+
 	"github.com/spf13/cobra"
 
 	"github.com/nnnc-org/go-radntlm/internal/crypto"
@@ -27,26 +30,33 @@ var authCmd = &cobra.Command{
 
 		if file != "" {
 			// Handle flatfile authentication
-			hash, err := backends.FlatfileSearch(file, username)
+			hash, expiration, err := backends.FlatfileSearch(file, username)
 			if err != nil {
 				cmd.PrintErrf("Error searching flatfile: %v\n", err)
-				return
+				os.Exit(3)
 			}
 
 			if hash == "" {
-				cmd.PrintErrf("Username not found in flatfile\n")
-				return
+				cmd.PrintErrf("Username (%s) not found in flatfile\n", username)
+				os.Exit(3)
+			}
+
+			if expiration != 0 && expiration < time.Now().Unix() {
+				cmd.PrintErrf("Password for '%s' has expired\n", username)
+				os.Exit(3)
 			}
 
 			valid, err := crypto.ValidateNTResponse(ntResponse, challenge, hash)
 			if err != nil {
 				cmd.PrintErrf("Error validating NT-Response: %v\n", err)
-				return
+				os.Exit(3)
 			}
 			if valid {
 				cmd.Println("Authentication successful")
+				os.Exit(0)
 			} else {
-				cmd.Println("Authentication failed")
+				cmd.Println("Incorrect Password")
+				os.Exit(1)
 			}
 			return
 		}
