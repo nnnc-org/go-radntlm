@@ -38,8 +38,15 @@ var genCmd = &cobra.Command{
 		// Format: username:hash:expiration
 		file, _ := cmd.Flags().GetString("file")
 		if file != "" {
+		    f, err := os.OpenFile(file, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+			if err != nil {
+				pterm.Error.Println(err)
+				os.Exit(1)
+			}
+			defer f.Close()
+
 			// append to file
-			err := os.WriteFile(file, []byte(fmt.Sprintf("%s:%s:%d\n", usr, hash, time.Now().AddDate(1, 0, 0).Unix())), 0644)
+			_, err = f.Write([]byte(fmt.Sprintf("%s:%s:%d\n", usr, hash, time.Now().AddDate(1, 0, 0).Unix())))
 			if err != nil {
 				pterm.Error.Println(err)
 				os.Exit(1)
