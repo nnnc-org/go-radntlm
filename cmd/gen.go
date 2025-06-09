@@ -15,7 +15,7 @@ import (
 
 var genCmd = &cobra.Command{
 	Use:     "generate",
-	Aliases: []string{"g"},
+	Aliases: []string{"g", "gen"},
 	Short:   "Generate an NT Hash or flatfile entry",
 	Long: ``,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -36,8 +36,18 @@ var genCmd = &cobra.Command{
 
 		// Generate flatfile entry
 		// Format: username:hash:expiration
+		file, _ := cmd.Flags().GetString("file")
+		if file != "" {
+			// append to file
+			err := os.WriteFile(file, []byte(fmt.Sprintf("%s:%s:%d\n", usr, hash, time.Now().AddDate(1, 0, 0).Unix())), 0644)
+			if err != nil {
+				pterm.Error.Println(err)
+				os.Exit(1)
+			}
+		} else {
+			fmt.Printf("%s:%s:%d\n", usr, hash, time.Now().AddDate(1, 0, 0).Unix())
+		}
 
-		fmt.Printf("%s:%s:%d\n", usr, hash, time.Now().AddDate(1, 0, 0).Unix())
 		os.Exit(0)
 	},
 }
