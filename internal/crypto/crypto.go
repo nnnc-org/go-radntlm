@@ -10,7 +10,6 @@ import (
 
 func CreateNTSessionKey(nthash string) string {
 	// The NT hash (itself an MD4 hash of the user password) is MD4 hashed, resulting in the 16 byte NTLMv1 Sesssion Key
-	//key := GetNTHash(nthash)
 	ntHash, _ := hex.DecodeString(nthash)
 	h := md4.New()
 	h.Write(ntHash)
