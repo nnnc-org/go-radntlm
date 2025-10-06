@@ -5,6 +5,7 @@ go 1.23.5
 require (
 	github.com/pterm/pterm v0.12.80
 	github.com/spf13/cobra v1.9.1
+	go.etcd.io/bbolt v1.4.3
 	golang.org/x/crypto v0.39.0
 )
 
