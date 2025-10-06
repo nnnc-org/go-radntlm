@@ -22,10 +22,10 @@ var authCmd = &cobra.Command{
 		challenge, _ := cmd.Flags().GetString("challenge")
 
 		file, _ := cmd.Flags().GetString("file")
-		vaultPath, _ := cmd.Flags().GetString("bbolt")
+		vaultPath, _ := cmd.Flags().GetString("database")
 
 		if file != "" && backends.VaultPath != "" {
-			cmd.PrintErrf("Cannot use both flatfile and bbolt backends simultaneously\n")
+			cmd.PrintErrf("Cannot use both flatfile and db backends simultaneously\n")
 			os.Exit(3)
 		}
 

@@ -31,6 +31,6 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	rootCmd.PersistentFlags().StringP("file", "f", "", "Flatfile location")
-	rootCmd.PersistentFlags().StringP("bbolt", "b", "", "BBoltDB location")
+	rootCmd.PersistentFlags().StringP("file", "F", "", "Flatfile location")
+	rootCmd.PersistentFlags().StringP("database", "D", "", "DB location")
 }
