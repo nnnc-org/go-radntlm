@@ -1,70 +1,84 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"time"
-	"fmt"
 
 	"github.com/spf13/cobra"
 
-	"github.com/nnnc-org/go-radntlm/internal/crypto"
 	"github.com/nnnc-org/go-radntlm/internal/backends"
+	"github.com/nnnc-org/go-radntlm/internal/crypto"
 )
 
 var authCmd = &cobra.Command{
 	Use:     "auth",
 	Aliases: []string{"a"},
 	Short:   "Authenticate an NT-Response",
-	Long: ``,
+	Long:    ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		username, _ := cmd.Flags().GetString("username")
 		ntResponse, _ := cmd.Flags().GetString("nt-response")
 		challenge, _ := cmd.Flags().GetString("challenge")
-		server, _ := cmd.Flags().GetString("server")
 
 		file, _ := cmd.Flags().GetString("file")
+		vaultPath, _ := cmd.Flags().GetString("bbolt")
 
-		if server != "" {
-			// handle later
-			return
+		if file != "" && backends.VaultPath != "" {
+			cmd.PrintErrf("Cannot use both flatfile and bbolt backends simultaneously\n")
+			os.Exit(3)
 		}
 
+		var hash string
+		var expiration int64
+		var err error
+
+		// Flatfile backend
 		if file != "" {
 			// Handle flatfile authentication
-			hash, expiration, err := backends.FlatfileSearch(file, username)
+			hash, expiration, err = backends.FlatfileSearch(file, username)
 			if err != nil {
 				cmd.PrintErrf("Error searching flatfile: %v\n", err)
 				os.Exit(3)
 			}
-
-			if hash == "" {
-				cmd.PrintErrf("Username (%s) not found in flatfile\n", username)
-				os.Exit(3)
-			}
-
-			if expiration != 0 && expiration < time.Now().Unix() {
-				cmd.PrintErrf("Password for '%s' has expired\n", username)
-				os.Exit(3)
-			}
-
-			valid, err := crypto.ValidateNTResponse(ntResponse, challenge, hash)
+		} else if vaultPath != "" {
+			// Handle bbolt authentication
+			backends.VaultInit(vaultPath)
+			hash, expiration, err = backends.VaultSearch(username)
 			if err != nil {
-				cmd.PrintErrf("Error validating NT-Response: %v\n", err)
+				cmd.PrintErrf("Error searching bbolt vault: %v\n", err)
 				os.Exit(3)
 			}
-			if valid {
-				// return nt key
-				ntKey := crypto.CreateNTSessionKey(hash)
-				fmt.Fprintln(cmd.OutOrStdout(), "NT_KEY:", ntKey)
-				os.Exit(0)
-			} else {
-				cmd.Println("Incorrect Password")
-				os.Exit(1)
-			}
-			return
+		} else {
+			cmd.PrintErrf("No backend specified. Use --file or --bbolt to specify a backend.\n")
+			os.Exit(3)
 		}
 
+		// Perform checks
+		if hash == "" {
+			cmd.PrintErrf("Username (%s) not found in flatfile\n", username)
+			os.Exit(3)
+		}
 
+		if expiration != 0 && expiration < time.Now().Unix() {
+			cmd.PrintErrf("Password for '%s' has expired\n", username)
+			os.Exit(3)
+		}
+
+		valid, err := crypto.ValidateNTResponse(ntResponse, challenge, hash)
+		if err != nil {
+			cmd.PrintErrf("Error validating NT-Response: %v\n", err)
+			os.Exit(3)
+		}
+		if valid {
+			// return nt key
+			ntKey := crypto.CreateNTSessionKey(hash)
+			fmt.Fprintln(cmd.OutOrStdout(), "NT_KEY:", ntKey)
+			os.Exit(0)
+		} else {
+			cmd.Println("Incorrect Password")
+			os.Exit(1)
+		}
 
 	},
 }

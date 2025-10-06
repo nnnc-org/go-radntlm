@@ -1,15 +1,15 @@
 package cmd
 
-
-import(
+import (
 	"os"
+
 	"github.com/spf13/cobra"
 )
 
 var rootCmd = &cobra.Command{
 	Use:   "go-radntlm",
 	Short: "Simple tool to respond to MSCHAP-V2 requests",
-	Long: ``,
+	Long:  ``,
 	//PersistentPreRun: func(cmd *cobra.Command, args []string) {
 	//},
 	// Uncomment the following line if your bare application
@@ -26,12 +26,11 @@ func Execute() {
 	}
 }
 
-
 func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
 	rootCmd.PersistentFlags().StringP("file", "f", "", "Flatfile location")
-	rootCmd.PersistentFlags().StringP("sql", "S", "", "SQL connection string")
+	rootCmd.PersistentFlags().StringP("bbolt", "b", "", "BBoltDB location")
 }
