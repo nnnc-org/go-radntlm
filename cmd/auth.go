@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"time"
 
+	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 
 	"github.com/nnnc-org/go-radntlm/internal/backends"
@@ -14,7 +14,7 @@ import (
 var authCmd = &cobra.Command{
 	Use:     "auth",
 	Aliases: []string{"a"},
-	Short:   "Authenticate an NT-Response",
+	Short:   "Manually authenticate an NT-Response",
 	Long:    ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		username, _ := cmd.Flags().GetString("username")
@@ -24,62 +24,49 @@ var authCmd = &cobra.Command{
 		file, _ := cmd.Flags().GetString("file")
 		vaultPath, _ := cmd.Flags().GetString("database")
 
-		if file != "" && backends.VaultPath != "" {
+		if file != "" && vaultPath != "" {
 			cmd.PrintErrf("Cannot use both flatfile and db backends simultaneously\n")
 			os.Exit(3)
 		}
 
-		var hash string
-		var expiration int64
-		var err error
-
-		// Flatfile backend
-		if file != "" {
-			// Handle flatfile authentication
-			hash, expiration, err = backends.FlatfileSearch(file, username)
-			if err != nil {
-				cmd.PrintErrf("Error searching flatfile: %v\n", err)
-				os.Exit(3)
-			}
-		} else if vaultPath != "" {
-			// Handle bbolt authentication
-			backends.VaultInit(vaultPath)
-			hash, expiration, err = backends.VaultSearch(username)
-			if err != nil {
-				cmd.PrintErrf("Error searching bbolt vault: %v\n", err)
-				os.Exit(3)
-			}
-		} else {
-			cmd.PrintErrf("No backend specified. Use --file or --bbolt to specify a backend.\n")
-			os.Exit(3)
-		}
-
-		// Perform checks
-		if hash == "" {
-			cmd.PrintErrf("Username (%s) not found in flatfile\n", username)
-			os.Exit(3)
-		}
-
-		if expiration != 0 && expiration < time.Now().Unix() {
-			cmd.PrintErrf("Password for '%s' has expired\n", username)
-			os.Exit(3)
-		}
-
-		valid, err := crypto.ValidateNTResponse(ntResponse, challenge, hash)
+		db, err := backends.Init(file, vaultPath)
 		if err != nil {
-			cmd.PrintErrf("Error validating NT-Response: %v\n", err)
+			cmd.PrintErrf("Error initializing backend: %v\n", err)
+			os.Exit(3)
+		}
+		defer db.Close()
+
+		// search for user in db
+		ud, err := db.Search(username)
+		if err != nil {
+			cmd.PrintErrf("Error searching for user: %v\n", err)
+			os.Exit(3)
+		}
+
+		if ud.Hash == "" {
+			pterm.Error.Printf("User %s contains empty hash\n", username)
+			os.Exit(2)
+		}
+
+		if ud.IsExpired() {
+			pterm.Error.Printf("Password for '%s' has expired\n", username)
+			os.Exit(3)
+		}
+
+		valid, err := crypto.ValidateNTResponse(ntResponse, challenge, ud.Hash)
+		if err != nil {
+			pterm.Error.Printf("Error validating NT-Response: %v\n", err)
 			os.Exit(3)
 		}
 		if valid {
 			// return nt key
-			ntKey := crypto.CreateNTSessionKey(hash)
+			ntKey := crypto.CreateNTSessionKey(ud.Hash)
 			fmt.Fprintln(cmd.OutOrStdout(), "NT_KEY:", ntKey)
 			os.Exit(0)
 		} else {
-			cmd.Println("Incorrect Password")
+			pterm.Error.Println("Incorrect Password")
 			os.Exit(1)
 		}
-
 	},
 }
 
@@ -89,7 +76,7 @@ func init() {
 	authCmd.Flags().StringP("username", "u", "", "Username to authenticate")
 	authCmd.Flags().StringP("nt-response", "n", "", "NT-Response to process")
 	authCmd.Flags().StringP("challenge", "c", "", "Challenge used to process the NT-Response")
-	authCmd.Flags().StringP("server", "s", "", "Server and port to connect to")
+	//authCmd.Flags().StringP("server", "s", "", "Server and port to connect to")
 
 	authCmd.MarkFlagRequired("username")
 	authCmd.MarkFlagRequired("nt-response")
