@@ -35,9 +35,11 @@ func (ah authApiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	ntKey, err := backends.AuthenticateUser(ah.db, username, ntResponse, challenge)
 	if err != nil {
+		log.Printf("[authapi] authentication failed for %s: %v", username, err)
 		http.Error(w, fmt.Sprintf("Authentication failed for %s: %v", username, err), http.StatusBadRequest)
 		return
 	}
+	log.Printf("[authapi] authentication successful for %s", username)
 	fmt.Fprintf(w, "NT_KEY: %s\n", ntKey)
 }
 
