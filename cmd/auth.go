@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 
 	"github.com/nnnc-org/go-radntlm/internal/backends"
@@ -37,7 +36,7 @@ var authCmd = &cobra.Command{
 
 		ntKey, err := backends.AuthenticateUser(db, username, ntResponse, challenge)
 		if err != nil {
-			pterm.Error.Printf("Authentication failed for %s: %v\n", username, err)
+			cmd.PrintErrf("Authentication failed for %s: %v\n", username, err)
 			os.Exit(1)
 		}
 		fmt.Fprintln(cmd.OutOrStdout(), "NT_KEY:", ntKey)
