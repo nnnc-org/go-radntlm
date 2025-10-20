@@ -21,7 +21,10 @@ type SAMLConfig struct {
 }
 
 func setupSAML(samlConfig SAMLConfig) (*samlsp.Middleware, error) {
-	rootURL, err := url.Parse("https://" + samlConfig.Domain + "/")
+	if samlConfig.Domain == "" {
+		return nil, errors.New("SAML domain must be provided")
+	}
+	rootURL, err := url.Parse("http://" + samlConfig.Domain + "/")
 	if err != nil {
 		return nil, err
 	}
