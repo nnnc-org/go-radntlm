@@ -2,7 +2,6 @@ package backends
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
 
 	bolt "go.etcd.io/bbolt"
@@ -68,7 +67,7 @@ func (v *VaultDB) Search(username string) (UserData, error) {
 		b := tx.Bucket([]byte("users"))
 		v := b.Get([]byte(username))
 		if v == nil {
-			return fmt.Errorf("user not found")
+			return ErrUserNotFound
 		}
 		return json.Unmarshal(v, &u)
 	})

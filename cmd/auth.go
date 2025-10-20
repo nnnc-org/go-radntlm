@@ -8,7 +8,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/nnnc-org/go-radntlm/internal/backends"
-	"github.com/nnnc-org/go-radntlm/internal/crypto"
 )
 
 var authCmd = &cobra.Command{
@@ -36,37 +35,13 @@ var authCmd = &cobra.Command{
 		}
 		defer db.Close()
 
-		// search for user in db
-		ud, err := db.Search(username)
+		ntKey, err := backends.AuthenticateUser(db, username, ntResponse, challenge)
 		if err != nil {
-			cmd.PrintErrf("Error searching for user: %v\n", err)
-			os.Exit(3)
-		}
-
-		if ud.Hash == "" {
-			pterm.Error.Printf("User %s contains empty hash\n", username)
-			os.Exit(2)
-		}
-
-		if ud.IsExpired() {
-			pterm.Error.Printf("Password for '%s' has expired\n", username)
-			os.Exit(3)
-		}
-
-		valid, err := crypto.ValidateNTResponse(ntResponse, challenge, ud.Hash)
-		if err != nil {
-			pterm.Error.Printf("Error validating NT-Response: %v\n", err)
-			os.Exit(3)
-		}
-		if valid {
-			// return nt key
-			ntKey := crypto.CreateNTSessionKey(ud.Hash)
-			fmt.Fprintln(cmd.OutOrStdout(), "NT_KEY:", ntKey)
-			os.Exit(0)
-		} else {
-			pterm.Error.Println("Incorrect Password")
+			pterm.Error.Printf("Authentication failed: %v\n", err)
 			os.Exit(1)
 		}
+		fmt.Fprintln(cmd.OutOrStdout(), "NT_KEY:", ntKey)
+		os.Exit(0)
 	},
 }
 

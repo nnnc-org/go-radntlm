@@ -3,6 +3,8 @@ package backends
 import (
 	"errors"
 	"time"
+
+	"github.com/nnnc-org/go-radntlm/internal/crypto"
 )
 
 // UserData represents stored user credentials.
@@ -22,6 +24,8 @@ type AuthStore interface {
 // Define custom errors for the backends package
 var ErrUserExpired = errors.New("password is expired")
 var ErrUserNotFound = errors.New("user not found")
+var ErrEmptyHash = errors.New("empty hash for user")
+var ErrIncorrectPassword = errors.New("incorrect password")
 
 func Init(filePath string, dbPath string) (AuthStore, error) {
 	if filePath != "" && dbPath != "" {
@@ -50,4 +54,33 @@ func (u *UserData) IsExpired() bool {
 		return false
 	}
 	return u.Expiration < time.Now().Unix()
+}
+
+// returns NT_KEY if authentication is successful
+func AuthenticateUser(db AuthStore, username, ntResponse, challenge string) (string, error) {
+	ud, err := db.Search(username)
+	if err != nil {
+		return "", err
+	}
+
+	if ud.Hash == "" {
+		return "", ErrEmptyHash
+	}
+
+	if ud.IsExpired() {
+		return "", ErrUserExpired
+	}
+
+	valid, err := crypto.ValidateNTResponse(ntResponse, challenge, ud.Hash)
+	if err != nil {
+		return "", err
+	}
+
+	if valid {
+		// return nt key
+		ntKey := crypto.CreateNTSessionKey(ud.Hash)
+		return ntKey, nil
+	} else {
+		return "", ErrIncorrectPassword
+	}
 }
