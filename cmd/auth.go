@@ -1,8 +1,12 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -18,6 +22,19 @@ var authCmd = &cobra.Command{
 		username, _ := cmd.Flags().GetString("username")
 		ntResponse, _ := cmd.Flags().GetString("nt-response")
 		challenge, _ := cmd.Flags().GetString("challenge")
+		server, _ := cmd.Flags().GetString("server")
+
+		if server != "" {
+			token, _ := cmd.Flags().GetString("token")
+			ntKey, err := serverAuth(username, ntResponse, challenge, server, token)
+			if err != nil {
+				cmd.PrintErrf("Authentication failed for %s: %v\n", username, err)
+				os.Exit(1)
+			}
+			fmt.Fprintln(cmd.OutOrStdout(), ntKey)
+			os.Exit(0)
+
+		}
 
 		file, _ := cmd.Flags().GetString("file")
 		vaultPath, _ := cmd.Flags().GetString("database")
@@ -39,7 +56,7 @@ var authCmd = &cobra.Command{
 			cmd.PrintErrf("Authentication failed for %s: %v\n", username, err)
 			os.Exit(1)
 		}
-		fmt.Fprintln(cmd.OutOrStdout(), "NT_KEY:", ntKey)
+		fmt.Fprint(cmd.OutOrStdout(), "NT_KEY:", ntKey)
 		os.Exit(0)
 	},
 }
@@ -50,9 +67,41 @@ func init() {
 	authCmd.Flags().StringP("username", "u", "", "Username to authenticate")
 	authCmd.Flags().StringP("nt-response", "n", "", "NT-Response to process")
 	authCmd.Flags().StringP("challenge", "c", "", "Challenge used to process the NT-Response")
-	//authCmd.Flags().StringP("server", "s", "", "Server and port to connect to")
+
+	authCmd.Flags().StringP("server", "s", "", "Server and port to connect to")
+	authCmd.Flags().StringP("token", "t", "", "Auth token for the auth API")
 
 	authCmd.MarkFlagRequired("username")
 	authCmd.MarkFlagRequired("nt-response")
 	authCmd.MarkFlagRequired("challenge")
+}
+
+func serverAuth(username string, ntResponse string, challenge string, server string, token string) (string, error) {
+	authString := fmt.Sprintf("username=%s&nt-response=%s&challenge=%s", username, ntResponse, challenge)
+
+	// http client
+	client := &http.Client{}
+	req, err := http.NewRequest("POST", server, bytes.NewBufferString(authString))
+	if err != nil {
+		return "", err
+	}
+
+	// set auth header
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("server returned %d: %s", resp.StatusCode, string(body))
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(string(body)), nil
 }
