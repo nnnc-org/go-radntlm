@@ -37,7 +37,7 @@ var authCmd = &cobra.Command{
 
 		ntKey, err := backends.AuthenticateUser(db, username, ntResponse, challenge)
 		if err != nil {
-			pterm.Error.Printf("Authentication failed: %v\n", err)
+			pterm.Error.Printf("Authentication failed for %s: %v\n", username, err)
 			os.Exit(1)
 		}
 		fmt.Fprintln(cmd.OutOrStdout(), "NT_KEY:", ntKey)
