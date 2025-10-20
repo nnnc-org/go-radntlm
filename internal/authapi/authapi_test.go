@@ -1,6 +1,7 @@
 package authapi
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -79,8 +80,10 @@ func TestAuthApiHandler_UserNotFound(t *testing.T) {
 		token: "token",
 		db:    &mockAuthStore{users: map[string]backends.UserData{}},
 	}
-	req := httptest.NewRequest("GET", "/authenticate?username=alice&nt-response=abc&challenge=def", nil)
+	//req := httptest.NewRequest("GET", "/authenticate?username=alice&nt-response=abc&challenge=def", nil)
+	req := httptest.NewRequest("POST", "/authenticate", bytes.NewBufferString("username=alice&nt-response=abc&challenge=def"))
 	req.Header.Set("Authorization", "Bearer token")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 	if rr.Code != http.StatusBadRequest {
@@ -101,8 +104,10 @@ func TestAuthApiHandler_Success(t *testing.T) {
 		db:    mockDB,
 	}
 
-	req := httptest.NewRequest("GET", "/authenticate?username=bob&nt-response=dd5428b01e86f4dfcabeac394946dbd43ee88f794dd63255&challenge=0123456789abcdef", nil)
+	//req := httptest.NewRequest("GET", "/authenticate?username=bob&nt-response=dd5428b01e86f4dfcabeac394946dbd43ee88f794dd63255&challenge=0123456789abcdef", nil)
+	req := httptest.NewRequest("POST", "/authenticate", bytes.NewBufferString("username=bob&nt-response=dd5428b01e86f4dfcabeac394946dbd43ee88f794dd63255&challenge=0123456789abcdef"))
 	req.Header.Set("Authorization", "Bearer token")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 	if rr.Code != http.StatusOK {

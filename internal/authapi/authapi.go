@@ -22,10 +22,10 @@ func (ah authApiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// grab the username, nt-response and challenge from query parameters
-	username := r.URL.Query().Get("username")
-	ntResponse := r.URL.Query().Get("nt-response")
-	challenge := r.URL.Query().Get("challenge")
+	// grab the username, nt-response and challenge from post data
+	username := r.FormValue("username")
+	ntResponse := r.FormValue("nt-response")
+	challenge := r.FormValue("challenge")
 
 	// if any parameter is missing, return bad request
 	if username == "" || ntResponse == "" || challenge == "" {
