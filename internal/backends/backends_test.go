@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -185,6 +187,127 @@ func TestAuthenticateUser_Valid(t *testing.T) {
 	expectedKey := "166A9E32F11580C1C0B62F9CD0BDA633"
 	if ntKey != expectedKey {
 		t.Errorf("expected NT key %s, got %s", expectedKey, ntKey)
+	}
+}
+
+func TestFlatfileDB_ListUsers(t *testing.T) {
+	tmpfile := filepath.Join(os.TempDir(), "test_flatfile_listusers.txt")
+	defer os.Remove(tmpfile)
+
+	db, err := OpenFlatfile(tmpfile)
+	if err != nil {
+		t.Fatalf("OpenFlatfile failed: %v", err)
+	}
+	defer db.Close()
+
+	now := time.Now().Unix()
+	past := now - 10000
+
+	// Add users
+	db.Add("alice", "hash1", false)
+	db.Add("bob", "hash2", false)
+	db.Add("expired", "hash3", false)
+	// Manually expire "expired"
+	lines, _ := db.readAllLines()
+	for i, line := range lines {
+		if strings.HasPrefix(line, "expired:") {
+			lines[i] = "expired:hash3:" + strconv.FormatInt(past, 10)
+		}
+	}
+	db.writeAllLines(lines)
+
+	// List all users
+	users, total, err := db.ListUsers("", false, 0, 10)
+	if err != nil {
+		t.Fatalf("ListUsers failed: %v", err)
+	}
+	if total != 3 {
+		t.Errorf("expected 3 users, got %d", total)
+	}
+	if len(users) != 3 {
+		t.Errorf("expected 3 users in page, got %d", len(users))
+	}
+
+	// Search for "bob"
+	users, total, err = db.ListUsers("bob", false, 0, 10)
+	if total != 1 || len(users) != 1 || users[0].Username != "bob" {
+		t.Errorf("search for bob failed: %+v", users)
+	}
+
+	// Filter expired
+	users, total, err = db.ListUsers("", true, 0, 10)
+	if total != 1 || len(users) != 1 || users[0].Username != "expired" {
+		t.Errorf("filter expired failed: %+v", users)
+	}
+
+	// Pagination: page size 2
+	users, total, err = db.ListUsers("", false, 0, 2)
+	if len(users) != 2 {
+		t.Errorf("expected 2 users in first page, got %d", len(users))
+	}
+	users2, _, _ := db.ListUsers("", false, 2, 2)
+	if len(users2) != 1 {
+		t.Errorf("expected 1 user in second page, got %d", len(users2))
+	}
+}
+
+func TestVaultDB_ListUsers(t *testing.T) {
+	tmpfile := filepath.Join(os.TempDir(), "test_vault_listusers.db")
+	defer os.Remove(tmpfile)
+
+	db, err := OpenVault(tmpfile)
+	if err != nil {
+		t.Fatalf("OpenVault failed: %v", err)
+	}
+	defer db.Close()
+
+	now := time.Now().Unix()
+	past := now - 10000
+
+	// Add users
+	db.Add("alice", "hash1", false)
+	db.Add("bob", "hash2", false)
+	db.Add("expired", "hash3", false)
+	// Manually expire "expired"
+	db.db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("users"))
+		u := User{Username: "expired", Hash: "hash3", Expiration: past}
+		data, _ := json.Marshal(u)
+		return b.Put([]byte("expired"), data)
+	})
+
+	// List all users
+	users, total, err := db.ListUsers("", false, 0, 10)
+	if err != nil {
+		t.Fatalf("ListUsers failed: %v", err)
+	}
+	if total != 3 {
+		t.Errorf("expected 3 users, got %d", total)
+	}
+	if len(users) != 3 {
+		t.Errorf("expected 3 users in page, got %d", len(users))
+	}
+
+	// Search for "alice"
+	users, total, err = db.ListUsers("alice", false, 0, 10)
+	if total != 1 || len(users) != 1 || users[0].Username != "alice" {
+		t.Errorf("search for alice failed: %+v", users)
+	}
+
+	// Filter expired
+	users, total, err = db.ListUsers("", true, 0, 10)
+	if total != 1 || len(users) != 1 || users[0].Username != "expired" {
+		t.Errorf("filter expired failed: %+v", users)
+	}
+
+	// Pagination: page size 2
+	users, total, err = db.ListUsers("", false, 0, 2)
+	if len(users) != 2 {
+		t.Errorf("expected 2 users in first page, got %d", len(users))
+	}
+	users2, _, _ := db.ListUsers("", false, 2, 2)
+	if len(users2) != 1 {
+		t.Errorf("expected 1 user in second page, got %d", len(users2))
 	}
 }
 
