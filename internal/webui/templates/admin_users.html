@@ -1,0 +1,93 @@
+{{define "admin_users"}}
+<!doctype html>
+<html>
+    <head>
+        <title>Admin - User Management</title>
+        <style>
+            table {
+                border-collapse: collapse;
+                width: 100%;
+            }
+            th,
+            td {
+                border: 1px solid #ccc;
+                padding: 8px;
+            }
+            th {
+                background: #eee;
+            }
+            .expired {
+                color: red;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>User Management</h1>
+        <form method="get" action="/admin">
+            <input
+                type="text"
+                name="search"
+                placeholder="Search username"
+                value="{{.Search}}"
+            />
+            <label>
+                <input
+                    type="checkbox"
+                    name="expired"
+                    value="1"
+                    {{if
+                    .Expired}}checked{{end}}
+                />
+                Show only expired
+            </label>
+            <button type="submit">Search</button>
+        </form>
+        <table>
+            <tr>
+                <th>Username</th>
+                <th>Expiration</th>
+                <th>Actions</th>
+            </tr>
+            {{range .Users}}
+            <tr>
+                <td>{{.Username}}</td>
+                <td class="{{if .Expired}}expired{{end}}">
+                    {{if
+                    .Expiration}}{{.ExpirationFormatted}}{{else}}Never{{end}}
+                </td>
+                <td>
+                    <form
+                        method="post"
+                        action="/admin/reset"
+                        style="display: inline"
+                    >
+                        <input
+                            type="hidden"
+                            name="username"
+                            value="{{.Username}}"
+                        />
+                        <input
+                            type="text"
+                            name="password"
+                            placeholder="New password"
+                            required
+                        />
+                        <button type="submit">Reset Password</button>
+                    </form>
+                </td>
+            </tr>
+            {{end}}
+        </table>
+        <div>
+            {{if gt .Page 1}}<a
+                href="?search={{.Search}}&expired={{.Expired}}&page={{dec .Page}}"
+                >Prev</a
+            >{{end}} Page {{.Page}} of {{.TotalPages}} {{if lt .Page
+            .TotalPages}}<a
+                href="?search={{.Search}}&expired={{.Expired}}&page={{inc .Page}}"
+                >Next</a
+            >{{end}}
+        </div>
+    </body>
+</html>
+{{end}}

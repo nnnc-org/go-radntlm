@@ -23,6 +23,8 @@ func StartServer(ctx context.Context, addr string, db backends.AuthStore, samlCo
 
 	mux.Handle("/saml/", sp)
 
+	mux.Handle("/admin/", adminMux(db))
+
 	mux.Handle("/", sp.RequireAccount(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		session, err := sp.Session.GetSession(r)
 		if err != nil || session == nil {
