@@ -169,3 +169,39 @@ func (db *FlatfileDB) Close() error {
 	// No persistent resources to close for flatfile
 	return nil
 }
+
+func (db *FlatfileDB) ListUsers(search string, expiredOnly bool, offset, limit int) ([]User, int, error) {
+	lines, err := db.readAllLines()
+	if err != nil {
+		return nil, 0, err
+	}
+	var users []User
+	now := time.Now().Unix()
+	for _, line := range lines {
+		parts := strings.SplitN(line, ":", 3)
+		if len(parts) < 3 {
+			continue
+		}
+		username := parts[0]
+		hash := parts[1]
+		exp, _ := strconv.ParseInt(parts[2], 10, 64)
+		expired := exp != 0 && exp < now
+		if search != "" && !strings.Contains(strings.ToLower(username), strings.ToLower(search)) {
+			continue
+		}
+		if expiredOnly && !expired {
+			continue
+		}
+		users = append(users, User{Username: username, Hash: hash, Expiration: exp})
+	}
+	total := len(users)
+	// Pagination
+	if offset > total {
+		return []User{}, total, nil
+	}
+	end := offset + limit
+	if end > total {
+		end = total
+	}
+	return users[offset:end], total, nil
+}

@@ -13,10 +13,18 @@ type UserData struct {
 	Expiration int64
 }
 
+// User represents a user record in the backend.
+type User struct {
+	Username   string
+	Hash       string
+	Expiration int64
+}
+
 // AuthStore defines a common interface for any credential backend.
 type AuthStore interface {
 	Add(username, hash string, expire bool) error
 	Search(username string) (userData UserData, err error)
+	ListUsers(search string, expiredOnly bool, offset, limit int) ([]User, int, error)
 	Cleanup() error
 	Close() error
 }

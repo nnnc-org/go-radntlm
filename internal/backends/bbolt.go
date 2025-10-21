@@ -2,6 +2,7 @@ package backends
 
 import (
 	"encoding/json"
+	"strings"
 	"time"
 
 	bolt "go.etcd.io/bbolt"
@@ -97,4 +98,40 @@ func (v *VaultDB) Cleanup() error {
 		}
 		return nil
 	})
+}
+
+func (v *VaultDB) ListUsers(search string, expiredOnly bool, offset, limit int) ([]User, int, error) {
+	var users []User
+	now := time.Now().Unix()
+	err := v.db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("users"))
+		return b.ForEach(func(k, v []byte) error {
+			var u User
+			if err := json.Unmarshal(v, &u); err != nil {
+				return nil
+			}
+			u.Username = string(k)
+			expired := u.Expiration != 0 && u.Expiration < now
+			if search != "" && !strings.Contains(strings.ToLower(u.Username), strings.ToLower(search)) {
+				return nil
+			}
+			if expiredOnly && !expired {
+				return nil
+			}
+			users = append(users, u)
+			return nil
+		})
+	})
+	if err != nil {
+		return nil, 0, err
+	}
+	total := len(users)
+	if offset > total {
+		return []User{}, total, nil
+	}
+	end := offset + limit
+	if end > total {
+		end = total
+	}
+	return users[offset:end], total, nil
 }

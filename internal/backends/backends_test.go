@@ -203,3 +203,6 @@ func (m *mockAuthStore) Search(username string) (UserData, error) {
 }
 func (m *mockAuthStore) Cleanup() error { return nil }
 func (m *mockAuthStore) Close() error   { return nil }
+func (m *mockAuthStore) ListUsers(search string, expiredOnly bool, offset, limit int) ([]User, int, error) {
+	return nil, 0, nil
+}
