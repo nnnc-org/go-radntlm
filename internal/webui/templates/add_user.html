@@ -1,8 +1,9 @@
+{{define "add_user"}}
 <!doctype html>
 <html lang="en">
     <head>
         <meta charset="utf-8" />
-        <title>eduroam Password Tool</title>
+        <title>Add New User</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <style>
             body {
@@ -47,13 +48,12 @@
                 color: #c62828;
                 margin-bottom: 12px;
             }
-            @media (max-width: 600px) {
-                body {
-                    margin: 8px;
-                }
-                .form-container {
-                    padding: 12px;
-                }
+            a {
+                color: #1976d2;
+                text-decoration: none;
+            }
+            a:hover {
+                text-decoration: underline;
             }
         </style>
         <script>
@@ -73,12 +73,24 @@
     </head>
     <body>
         <div class="form-container">
-            <h2>Set Your eduroam Password</h2>
+            <h2>Add New User</h2>
+            {{if .Error}}
+            <div class="error">{{.Error}}</div>
+            {{end}}
             <form
                 method="POST"
-                action="/"
+                action="/admin/new"
                 onsubmit="return validateForm(event)"
             >
+                <label for="email">Email:</label>
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    required
+                    autocomplete="username"
+                    value="{{.Email}}"
+                />
                 <label for="password">Password:</label>
                 <input
                     type="password"
@@ -96,8 +108,10 @@
                     autocomplete="new-password"
                 />
                 <div id="error" class="error"></div>
-                <button type="submit">Submit</button>
+                <button type="submit">Add User</button>
             </form>
+            <p><a href="/admin">Back to user list</a></p>
         </div>
     </body>
 </html>
+{{end}}

@@ -1,34 +1,186 @@
 {{define "admin_users"}}
 <!doctype html>
-<html>
+<html lang="en">
     <head>
+        <meta charset="utf-8" />
         <title>Admin - User Management</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <style>
+            html,
+            body {
+                font-family: system-ui, sans-serif;
+                background: #f7f9fb;
+                color: #222;
+                margin: 0;
+                padding: 0;
+            }
+            body {
+                max-width: 900px;
+                margin: 40px auto;
+                padding: 24px;
+                background: #fff;
+                border-radius: 12px;
+                box-shadow: 0 2px 16px rgba(0, 0, 0, 0.07);
+            }
+            h1 {
+                margin-top: 0;
+                font-size: 2rem;
+                letter-spacing: -1px;
+            }
+            form {
+                margin-bottom: 24px;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 12px;
+                align-items: center;
+            }
+            input[type="text"],
+            input[type="password"] {
+                padding: 8px 12px;
+                border: 1px solid #bbb;
+                border-radius: 6px;
+                font-size: 1rem;
+                transition: border-color 0.2s;
+            }
+            input[type="text"]:focus,
+            input[type="password"]:focus {
+                border-color: #1976d2;
+                outline: none;
+            }
+            button {
+                background: #1976d2;
+                color: #fff;
+                border: none;
+                border-radius: 6px;
+                padding: 8px 18px;
+                font-size: 1rem;
+                cursor: pointer;
+                transition: background 0.2s;
+            }
+            button:hover,
+            button:focus {
+                background: #125ea2;
+            }
+            .table-container {
+                width: 100%;
+                overflow-x: auto;
+            }
             table {
                 border-collapse: collapse;
                 width: 100%;
+                margin-bottom: 18px;
+                background: #fafbfc;
+                border-radius: 8px;
+                overflow: hidden;
+                min-width: 500px;
             }
             th,
             td {
-                border: 1px solid #ccc;
-                padding: 8px;
+                border: 1px solid #e0e4ea;
+                padding: 10px 12px;
+                text-align: left;
             }
             th {
-                background: #eee;
+                background: #e8eef7;
+                font-weight: 600;
+            }
+            tr:nth-child(even) td {
+                background: #f3f6fa;
             }
             .expired {
-                color: red;
+                color: #c62828;
+                font-weight: bold;
+            }
+            .pagination {
+                margin-top: 18px;
+                display: flex;
+                gap: 10px;
+                align-items: center;
+            }
+            .pagination a,
+            .pagination span {
+                padding: 6px 12px;
+                border-radius: 4px;
+                text-decoration: none;
+                color: #1976d2;
+                background: #e8eef7;
+                transition: background 0.2s;
+            }
+            .pagination a:hover,
+            .pagination a:focus {
+                background: #d0e2fa;
+                outline: 2px solid #1976d2;
+            }
+            @media (max-width: 800px) {
+                body {
+                    padding: 8px;
+                }
+                table,
+                th,
+                td {
+                    font-size: 0.95rem;
+                }
+                form {
+                    flex-direction: column;
+                    gap: 8px;
+                    align-items: stretch;
+                }
+            }
+            /* Card style for user rows on very small screens */
+            @media (max-width: 500px) {
+                .table-container,
+                table,
+                thead,
+                tbody,
+                th,
+                td,
+                tr {
+                    display: block;
+                    width: 100%;
+                }
+                table {
+                    border: none;
+                    min-width: 0;
+                    background: none;
+                }
+                thead {
+                    display: none;
+                }
+                tr {
+                    margin-bottom: 18px;
+                    background: #f3f6fa;
+                    border-radius: 8px;
+                    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+                    padding: 10px 0;
+                }
+                td {
+                    border: none;
+                    padding: 8px 16px;
+                    position: relative;
+                }
+                td:before {
+                    content: attr(data-label);
+                    font-weight: bold;
+                    display: block;
+                    margin-bottom: 2px;
+                    color: #1976d2;
+                }
+                .pagination {
+                    flex-direction: column;
+                    gap: 6px;
+                }
             }
         </style>
     </head>
     <body>
         <h1>User Management</h1>
-        <form method="get" action="/admin">
+        <form method="get" action="/admin" aria-label="Search users">
             <input
                 type="text"
                 name="search"
                 placeholder="Search username"
                 value="{{.Search}}"
+                aria-label="Search username"
             />
             <label>
                 <input
@@ -42,52 +194,85 @@
             </label>
             <button type="submit">Search</button>
         </form>
-        <table>
-            <tr>
-                <th>Username</th>
-                <th>Expiration</th>
-                <th>Actions</th>
-            </tr>
-            {{range .Users}}
-            <tr>
-                <td>{{.Username}}</td>
-                <td class="{{if .Expired}}expired{{end}}">
-                    {{if
-                    .Expiration}}{{.ExpirationFormatted}}{{else}}Never{{end}}
-                </td>
-                <td>
-                    <form
-                        method="post"
-                        action="/admin/reset"
-                        style="display: inline"
-                    >
-                        <input
-                            type="hidden"
-                            name="username"
-                            value="{{.Username}}"
-                        />
-                        <input
-                            type="text"
-                            name="password"
-                            placeholder="New password"
-                            required
-                        />
-                        <button type="submit">Reset Password</button>
-                    </form>
-                </td>
-            </tr>
-            {{end}}
-        </table>
-        <div>
-            {{if gt .Page 1}}<a
-                href="?search={{.Search}}&expired={{.Expired}}&page={{dec .Page}}"
-                >Prev</a
-            >{{end}} Page {{.Page}} of {{.TotalPages}} {{if lt .Page
-            .TotalPages}}<a
-                href="?search={{.Search}}&expired={{.Expired}}&page={{inc .Page}}"
-                >Next</a
-            >{{end}}
+        <a
+            href="/admin/new"
+            style="
+                display: inline-block;
+                margin-bottom: 18px;
+                padding: 10px 18px;
+                background: #43a047;
+                color: #fff;
+                border-radius: 6px;
+                text-decoration: none;
+                font-weight: 600;
+            "
+            >+ New User</a
+        >
+
+        <div class="table-container">
+            <table aria-label="User list">
+                <thead>
+                    <tr>
+                        <th scope="col">Username</th>
+                        <th scope="col">Expiration</th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .Users}}
+                    <tr>
+                        <td data-label="Username">{{.Username}}</td>
+                        <td
+                            data-label="Expiration"
+                            class="{{if .Expired}}expired{{end}}"
+                        >
+                            {{if
+                            .Expiration}}{{.ExpirationFormatted}}{{else}}Never{{end}}
+                        </td>
+                        <td data-label="Actions">
+                            <form
+                                method="post"
+                                action="/admin/reset"
+                                style="display: inline"
+                                aria-label="Reset password for {{.Username}}"
+                            >
+                                <input
+                                    type="hidden"
+                                    name="username"
+                                    value="{{.Username}}"
+                                />
+                                <input
+                                    type="password"
+                                    name="password"
+                                    placeholder="New password"
+                                    required
+                                    aria-label="New password for {{.Username}}"
+                                />
+                                <button type="submit">Reset Password</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
         </div>
+        <nav class="pagination" aria-label="Pagination">
+            {{if gt .Page 1}}
+            <a
+                href="?search={{.Search}}&expired={{.Expired}}&page={{dec .Page}}"
+                rel="prev"
+                >Prev</a
+            >
+            {{end}}
+            <span>Page {{.Page}} of {{.TotalPages}}</span>
+            {{if lt .Page .TotalPages}}
+            <a
+                href="?search={{.Search}}&expired={{.Expired}}&page={{inc .Page}}"
+                rel="next"
+                >Next</a
+            >
+            {{end}}
+        </nav>
     </body>
 </html>
 {{end}}

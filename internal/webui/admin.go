@@ -4,11 +4,22 @@ import (
 	"encoding/hex"
 	"html/template"
 	"net/http"
+	"regexp"
 	"strconv"
 	"time"
 
 	"github.com/nnnc-org/go-radntlm/internal/backends"
 	"github.com/nnnc-org/go-radntlm/internal/crypto"
+)
+
+var adminTmpl = template.Must(
+	template.New("admin_users.html").Funcs(template.FuncMap{
+		"dec": func(i int) int { return i - 1 },
+		"inc": func(i int) int { return i + 1 },
+	}).ParseFiles(
+		"internal/webui/templates/admin_users.html",
+		"internal/webui/templates/add_user.html",
+	),
 )
 
 func adminMux(db backends.AuthStore) *http.ServeMux {
@@ -26,18 +37,13 @@ func adminHandler(w http.ResponseWriter, r *http.Request, db backends.AuthStore)
 		adminInterface(w, r, db)
 	case "/admin/reset":
 		adminResetHandler(w, r, db)
+	case "/admin/new":
+		adminAddUserHandler(w, r, db)
 	default:
 		http.NotFound(w, r)
 	}
 
 }
-
-var adminTmpl = template.Must(
-	template.New("admin_users.html").Funcs(template.FuncMap{
-		"dec": func(i int) int { return i - 1 },
-		"inc": func(i int) int { return i + 1 },
-	}).ParseFiles("internal/webui/templates/admin_users.html"),
-)
 
 func adminInterface(w http.ResponseWriter, r *http.Request, db backends.AuthStore) {
 	// Parse query params
@@ -103,10 +109,63 @@ func adminResetHandler(w http.ResponseWriter, r *http.Request, db backends.AuthS
 	}
 	// Hash password as NT hash
 	ntHash := hex.EncodeToString(crypto.GetNTHash(password))
-	err := db.Add(username, ntHash, false)
+	err := db.Add(username, ntHash, true)
 	if err != nil {
 		http.Error(w, "Failed to reset password: "+err.Error(), 500)
 		return
 	}
 	http.Redirect(w, r, "/admin?msg=Password+reset+for+"+username, http.StatusSeeOther)
+}
+
+func adminAddUserHandler(w http.ResponseWriter, r *http.Request, db backends.AuthStore) {
+	type formData struct {
+		Email string
+		Error string
+	}
+
+	switch r.Method {
+	case "GET":
+		adminTmpl.ExecuteTemplate(w, "add_user", formData{})
+	case "POST":
+		email := r.FormValue("email")
+		password := r.FormValue("password")
+		confirm := r.FormValue("confirm")
+
+		// Basic email validation
+		emailRegex := regexp.MustCompile(`^[^@]+@[^@]+\.[^@]+$`)
+		if email == "" || !emailRegex.MatchString(email) {
+			adminTmpl.ExecuteTemplate(w, "add_user", formData{
+				Email: email,
+				Error: "Please enter a valid email address.",
+			})
+			return
+		}
+		if password == "" {
+			adminTmpl.ExecuteTemplate(w, "add_user", formData{
+				Email: email,
+				Error: "Password cannot be empty.",
+			})
+			return
+		}
+		if password != confirm {
+			adminTmpl.ExecuteTemplate(w, "add_user", formData{
+				Email: email,
+				Error: "Passwords do not match.",
+			})
+			return
+		}
+
+		ntHash := hex.EncodeToString(crypto.GetNTHash(password))
+		err := db.Add(email, ntHash, true)
+		if err != nil {
+			adminTmpl.ExecuteTemplate(w, "add_user", formData{
+				Email: email,
+				Error: "Failed to add user: " + err.Error(),
+			})
+			return
+		}
+		http.Redirect(w, r, "/admin?msg=User+"+email+"+added", http.StatusSeeOther)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
 }
