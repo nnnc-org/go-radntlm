@@ -1,0 +1,23 @@
+volumes:
+  config:
+
+services:
+  go-radntlm:
+    image: ghcr.io/nnnc-org/go-radntlm:latest
+    container_name: go-radntlm
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - config:/config
+    command:
+      - "server"
+      - "--database=/config/users.db"
+      - "--token=thisisasecuretoken"
+    environment:
+      DOMAIN: "localhost:8080"
+      METADATA_URL: "https://idp.example.org/simplesaml/saml2/idp/metadata.php"
+      #METADATA_FILE: "/config/idp-metadata.xml"
+      CERT_FILE: "/config/signing-cert.pem"
+      KEY_FILE: "/config/signing-key.pem"
+      ADMIN_AUTH: "test:$2y$10$2q0GtuqpNOC8wsL.FgPVl.EJDBONPtjdE30y6efeAsSvcnZe.Btgi"
