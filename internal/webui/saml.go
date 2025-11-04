@@ -24,7 +24,13 @@ func setupSAML(samlConfig SAMLConfig) (*samlsp.Middleware, error) {
 	if samlConfig.Domain == "" {
 		return nil, errors.New("SAML domain must be provided")
 	}
-	rootURL, err := url.Parse("http://" + samlConfig.Domain + "/")
+	// if no scheme, add http
+	rootURLStr := samlConfig.Domain
+	if len(rootURLStr) < 7 || (rootURLStr[:7] != "http://" && rootURLStr[:8] != "https://") {
+		rootURLStr = "http://" + rootURLStr
+	}
+
+	rootURL, err := url.Parse(rootURLStr + "/")
 	if err != nil {
 		return nil, err
 	}
