@@ -81,6 +81,33 @@
                 height: 18px;
                 fill: currentColor;
             }
+            td.actions-cell {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 8px;
+            }
+            .actions-cell form {
+                margin: 0;
+                display: flex;
+                flex-direction: row;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 8px;
+            }
+            .reset-form {
+                flex: 1 1 240px;
+            }
+            .reset-form input[type="password"] {
+                flex: 1 1 auto;
+                min-width: 110px;
+            }
+            .icon-actions {
+                display: flex;
+                flex-wrap: nowrap;
+                align-items: center;
+                gap: 8px;
+            }
             .table-container {
                 width: 100%;
                 overflow-x: auto;
@@ -249,11 +276,11 @@
                             {{if
                             .Expiration}}{{.ExpirationFormatted}}{{else}}Never{{end}}
                         </td>
-                        <td data-label="Actions">
+                        <td data-label="Actions" class="actions-cell">
                             <form
                                 method="post"
                                 action="/admin/reset"
-                                style="display: inline"
+                                class="reset-form"
                                 aria-label="Reset password for {{.Username}}"
                                 onsubmit="return confirm('Reset password for {{.Username}}?');"
                             >
@@ -276,11 +303,11 @@
                                 />
                                 <button type="submit">Reset Password</button>
                             </form>
+                            <div class="icon-actions">
                             {{if .Expiration}}
                             <form
                                 method="post"
                                 action="/admin/disable-expiration"
-                                style="display: inline"
                                 aria-label="Disable expiration for {{.Username}}"
                                 onsubmit="return confirm('Disable expiration for {{.Username}}? They will no longer expire.');"
                             >
@@ -311,7 +338,6 @@
                             <form
                                 method="post"
                                 action="/admin/delete"
-                                style="display: inline"
                                 aria-label="Delete user {{.Username}}"
                                 onsubmit="return confirm('Delete user {{.Username}}? This cannot be undone.');"
                             >
@@ -338,6 +364,7 @@
                                     </svg>
                                 </button>
                             </form>
+                            </div>
                         </td>
                     </tr>
                     {{end}}
