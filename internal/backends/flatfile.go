@@ -99,6 +99,34 @@ func (db *FlatfileDB) Search(username string) (UserData, error) {
 	return ud, ErrUserNotFound
 }
 
+// SetExpiration updates the expiration for an existing user. An expiration of
+// 0 disables expiration (the user never expires).
+func (db *FlatfileDB) SetExpiration(username string, expiration int64) error {
+	lines, err := db.readAllLines()
+	if err != nil {
+		return err
+	}
+
+	found := false
+	for i, line := range lines {
+		if strings.HasPrefix(line, username+":") {
+			parts := strings.SplitN(line, ":", 3)
+			if len(parts) < 3 {
+				return fmt.Errorf("invalid line format for user '%s'", username)
+			}
+			lines[i] = fmt.Sprintf("%s:%s:%d", parts[0], parts[1], expiration)
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		return ErrUserNotFound
+	}
+
+	return db.writeAllLines(lines)
+}
+
 // Delete removes a user record from the flatfile.
 func (db *FlatfileDB) Delete(username string) error {
 	lines, err := db.readAllLines()

@@ -262,6 +262,26 @@
                                 />
                                 <button type="submit">Reset Password</button>
                             </form>
+                            {{if .Expiration}}
+                            <form
+                                method="post"
+                                action="/admin/disable-expiration"
+                                style="display: inline"
+                                aria-label="Disable expiration for {{.Username}}"
+                            >
+                                <input
+                                    type="hidden"
+                                    name="csrf_token"
+                                    value="{{$.CSRFToken}}"
+                                />
+                                <input
+                                    type="hidden"
+                                    name="username"
+                                    value="{{.Username}}"
+                                />
+                                <button type="submit">Disable Expiration</button>
+                            </form>
+                            {{end}}
                             <form
                                 method="post"
                                 action="/admin/delete"
