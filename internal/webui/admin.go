@@ -109,8 +109,13 @@ func adminResetHandler(w http.ResponseWriter, r *http.Request, db backends.AuthS
 	}
 	username := r.FormValue("username")
 	password := r.FormValue("password")
+	confirm := r.FormValue("confirm")
 	if username == "" || password == "" {
 		http.Error(w, "Missing username or password", 400)
+		return
+	}
+	if confirm != "" && password != confirm {
+		http.Error(w, "Passwords do not match", 400)
 		return
 	}
 	// Hash password as NT hash
