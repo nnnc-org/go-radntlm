@@ -61,6 +61,13 @@
             button:focus {
                 background: #125ea2;
             }
+            button.delete-btn {
+                background: #c62828;
+            }
+            button.delete-btn:hover,
+            button.delete-btn:focus {
+                background: #a21b1b;
+            }
             .table-container {
                 width: 100%;
                 overflow-x: auto;
@@ -249,6 +256,22 @@
                                     aria-label="New password for {{.Username}}"
                                 />
                                 <button type="submit">Reset Password</button>
+                            </form>
+                            <form
+                                method="post"
+                                action="/admin/delete"
+                                style="display: inline"
+                                aria-label="Delete user {{.Username}}"
+                                onsubmit="return confirm('Delete user {{.Username}}? This cannot be undone.');"
+                            >
+                                <input
+                                    type="hidden"
+                                    name="username"
+                                    value="{{.Username}}"
+                                />
+                                <button type="submit" class="delete-btn">
+                                    Delete
+                                </button>
                             </form>
                         </td>
                     </tr>

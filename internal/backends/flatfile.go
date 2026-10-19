@@ -99,6 +99,30 @@ func (db *FlatfileDB) Search(username string) (UserData, error) {
 	return ud, ErrUserNotFound
 }
 
+// Delete removes a user record from the flatfile.
+func (db *FlatfileDB) Delete(username string) error {
+	lines, err := db.readAllLines()
+	if err != nil {
+		return err
+	}
+
+	found := false
+	var newLines []string
+	for _, line := range lines {
+		if strings.HasPrefix(line, username+":") {
+			found = true
+			continue
+		}
+		newLines = append(newLines, line)
+	}
+
+	if !found {
+		return ErrUserNotFound
+	}
+
+	return db.writeAllLines(newLines)
+}
+
 // Cleanup removes expired users from the flatfile.
 func (db *FlatfileDB) Cleanup() error {
 	lines, err := db.readAllLines()

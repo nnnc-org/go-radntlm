@@ -25,6 +25,7 @@ type AuthStore interface {
 	Add(username, hash string, expire bool) error
 	Search(username string) (userData UserData, err error)
 	ListUsers(search string, expiredOnly bool, offset, limit int) ([]User, int, error)
+	Delete(username string) error
 	Cleanup() error
 	Close() error
 }

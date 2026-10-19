@@ -39,6 +39,8 @@ func adminHandler(w http.ResponseWriter, r *http.Request, db backends.AuthStore)
 		adminResetHandler(w, r, db)
 	case "/admin/new":
 		adminAddUserHandler(w, r, db)
+	case "/admin/delete":
+		adminDeleteHandler(w, r, db)
 	default:
 		http.NotFound(w, r)
 	}
@@ -115,6 +117,24 @@ func adminResetHandler(w http.ResponseWriter, r *http.Request, db backends.AuthS
 		return
 	}
 	http.Redirect(w, r, "/admin?msg=Password+reset+for+"+username, http.StatusSeeOther)
+}
+
+func adminDeleteHandler(w http.ResponseWriter, r *http.Request, db backends.AuthStore) {
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	username := r.FormValue("username")
+	if username == "" {
+		http.Error(w, "Missing username", 400)
+		return
+	}
+	err := db.Delete(username)
+	if err != nil {
+		http.Error(w, "Failed to delete user: "+err.Error(), 500)
+		return
+	}
+	http.Redirect(w, r, "/admin?msg=User+"+username+"+deleted", http.StatusSeeOther)
 }
 
 func adminAddUserHandler(w http.ResponseWriter, r *http.Request, db backends.AuthStore) {

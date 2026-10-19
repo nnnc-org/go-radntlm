@@ -79,6 +79,17 @@ func (v *VaultDB) Search(username string) (UserData, error) {
 	return u, nil
 }
 
+// Delete removes a user record from the database.
+func (v *VaultDB) Delete(username string) error {
+	return v.db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("users"))
+		if b.Get([]byte(username)) == nil {
+			return ErrUserNotFound
+		}
+		return b.Delete([]byte(username))
+	})
+}
+
 // Cleanup removes expired users from the database.
 func (v *VaultDB) Cleanup() error {
 	return v.db.Update(func(tx *bolt.Tx) error {
