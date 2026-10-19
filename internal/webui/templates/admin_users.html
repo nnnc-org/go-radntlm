@@ -68,6 +68,19 @@
             button.delete-btn:focus {
                 background: #a21b1b;
             }
+            button.icon-btn {
+                padding: 8px 10px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                line-height: 0;
+                vertical-align: middle;
+            }
+            button.icon-btn svg {
+                width: 18px;
+                height: 18px;
+                fill: currentColor;
+            }
             .table-container {
                 width: 100%;
                 overflow-x: auto;
@@ -242,6 +255,7 @@
                                 action="/admin/reset"
                                 style="display: inline"
                                 aria-label="Reset password for {{.Username}}"
+                                onsubmit="return confirm('Reset password for {{.Username}}?');"
                             >
                                 <input
                                     type="hidden"
@@ -268,6 +282,7 @@
                                 action="/admin/disable-expiration"
                                 style="display: inline"
                                 aria-label="Disable expiration for {{.Username}}"
+                                onsubmit="return confirm('Disable expiration for {{.Username}}? They will no longer expire.');"
                             >
                                 <input
                                     type="hidden"
@@ -279,7 +294,18 @@
                                     name="username"
                                     value="{{.Username}}"
                                 />
-                                <button type="submit">Disable Expiration</button>
+                                <button
+                                    type="submit"
+                                    class="icon-btn"
+                                    title="Disable expiration"
+                                    aria-label="Disable expiration for {{.Username}}"
+                                >
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path
+                                            d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm1-13h-2v6l5 3 1-1.73-4-2.37V7z"
+                                        />
+                                    </svg>
+                                </button>
                             </form>
                             {{end}}
                             <form
@@ -299,8 +325,17 @@
                                     name="username"
                                     value="{{.Username}}"
                                 />
-                                <button type="submit" class="delete-btn">
-                                    Delete
+                                <button
+                                    type="submit"
+                                    class="icon-btn delete-btn"
+                                    title="Delete user"
+                                    aria-label="Delete user {{.Username}}"
+                                >
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path
+                                            d="M6 7h12v13a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7zm3 2v9h2V9H9zm4 0v9h2V9h-2zM9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1h5v2H4V4h5z"
+                                        />
+                                    </svg>
                                 </button>
                             </form>
                         </td>
