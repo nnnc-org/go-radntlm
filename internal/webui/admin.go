@@ -24,9 +24,9 @@ var adminTmpl = template.Must(
 
 func adminMux(db backends.AuthStore) *http.ServeMux {
 	mux := http.NewServeMux()
-	mux.Handle("/", basicAuthMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle("/", basicAuthMiddleware(csrfMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		adminHandler(w, r, db)
-	})))
+	}))))
 
 	return mux
 }
@@ -92,8 +92,10 @@ func adminInterface(w http.ResponseWriter, r *http.Request, db backends.AuthStor
 		Expired    bool
 		Page       int
 		TotalPages int
+		CSRFToken  string
 	}{
 		Users: rows, Search: search, Expired: expired, Page: page, TotalPages: totalPages,
+		CSRFToken: csrfToken(r),
 	}
 	adminTmpl.ExecuteTemplate(w, "admin_users", data)
 }
@@ -139,13 +141,15 @@ func adminDeleteHandler(w http.ResponseWriter, r *http.Request, db backends.Auth
 
 func adminAddUserHandler(w http.ResponseWriter, r *http.Request, db backends.AuthStore) {
 	type formData struct {
-		Email string
-		Error string
+		Email     string
+		Error     string
+		CSRFToken string
 	}
+	token := csrfToken(r)
 
 	switch r.Method {
 	case "GET":
-		adminTmpl.ExecuteTemplate(w, "add_user", formData{})
+		adminTmpl.ExecuteTemplate(w, "add_user", formData{CSRFToken: token})
 	case "POST":
 		email := r.FormValue("email")
 		password := r.FormValue("password")
@@ -155,22 +159,25 @@ func adminAddUserHandler(w http.ResponseWriter, r *http.Request, db backends.Aut
 		emailRegex := regexp.MustCompile(`^[^@]+@[^@]+\.[^@]+$`)
 		if email == "" || !emailRegex.MatchString(email) {
 			adminTmpl.ExecuteTemplate(w, "add_user", formData{
-				Email: email,
-				Error: "Please enter a valid email address.",
+				Email:     email,
+				Error:     "Please enter a valid email address.",
+				CSRFToken: token,
 			})
 			return
 		}
 		if password == "" {
 			adminTmpl.ExecuteTemplate(w, "add_user", formData{
-				Email: email,
-				Error: "Password cannot be empty.",
+				Email:     email,
+				Error:     "Password cannot be empty.",
+				CSRFToken: token,
 			})
 			return
 		}
 		if password != confirm {
 			adminTmpl.ExecuteTemplate(w, "add_user", formData{
-				Email: email,
-				Error: "Passwords do not match.",
+				Email:     email,
+				Error:     "Passwords do not match.",
+				CSRFToken: token,
 			})
 			return
 		}
@@ -179,8 +186,9 @@ func adminAddUserHandler(w http.ResponseWriter, r *http.Request, db backends.Aut
 		err := db.Add(email, ntHash, true)
 		if err != nil {
 			adminTmpl.ExecuteTemplate(w, "add_user", formData{
-				Email: email,
-				Error: "Failed to add user: " + err.Error(),
+				Email:     email,
+				Error:     "Failed to add user: " + err.Error(),
+				CSRFToken: token,
 			})
 			return
 		}

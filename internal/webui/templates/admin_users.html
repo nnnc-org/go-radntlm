@@ -245,6 +245,11 @@
                             >
                                 <input
                                     type="hidden"
+                                    name="csrf_token"
+                                    value="{{$.CSRFToken}}"
+                                />
+                                <input
+                                    type="hidden"
                                     name="username"
                                     value="{{.Username}}"
                                 />
@@ -264,6 +269,11 @@
                                 aria-label="Delete user {{.Username}}"
                                 onsubmit="return confirm('Delete user {{.Username}}? This cannot be undone.');"
                             >
+                                <input
+                                    type="hidden"
+                                    name="csrf_token"
+                                    value="{{$.CSRFToken}}"
+                                />
                                 <input
                                     type="hidden"
                                     name="username"
