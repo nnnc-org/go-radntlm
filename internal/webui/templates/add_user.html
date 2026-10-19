@@ -82,6 +82,7 @@
                 action="/admin/new"
                 onsubmit="return validateForm(event)"
             >
+                <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" />
                 <label for="email">Email:</label>
                 <input
                     type="email"

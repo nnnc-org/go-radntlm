@@ -61,6 +61,85 @@
             button:focus {
                 background: #125ea2;
             }
+            button.delete-btn {
+                background: #c62828;
+            }
+            button.delete-btn:hover,
+            button.delete-btn:focus {
+                background: #a21b1b;
+            }
+            button.icon-btn {
+                padding: 8px 10px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                line-height: 0;
+                vertical-align: middle;
+            }
+            button.icon-btn svg {
+                width: 18px;
+                height: 18px;
+                fill: currentColor;
+            }
+            td.actions-cell {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 8px;
+            }
+            .actions-cell form {
+                margin: 0;
+                display: flex;
+                flex-direction: row;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 8px;
+            }
+            .icon-actions {
+                display: flex;
+                flex-wrap: nowrap;
+                align-items: center;
+                gap: 8px;
+            }
+            dialog.modal {
+                border: none;
+                border-radius: 12px;
+                padding: 24px;
+                max-width: 360px;
+                width: 90%;
+                box-shadow: 0 8px 40px rgba(0, 0, 0, 0.25);
+            }
+            dialog.modal::backdrop {
+                background: rgba(0, 0, 0, 0.45);
+            }
+            dialog.modal h2 {
+                margin-top: 0;
+                font-size: 1.4rem;
+            }
+            dialog.modal label {
+                display: block;
+                font-weight: 600;
+                margin-top: 8px;
+            }
+            dialog.modal input[type="password"] {
+                width: 100%;
+                box-sizing: border-box;
+                margin-top: 6px;
+                margin-bottom: 8px;
+            }
+            .modal-actions {
+                display: flex;
+                justify-content: flex-end;
+                gap: 8px;
+                margin-top: 16px;
+            }
+            .modal-actions button.cancel-btn {
+                background: #777;
+            }
+            .modal-actions button.cancel-btn:hover,
+            .modal-actions button.cancel-btn:focus {
+                background: #555;
+            }
             .table-container {
                 width: 100%;
                 overflow-x: auto;
@@ -229,27 +308,82 @@
                             {{if
                             .Expiration}}{{.ExpirationFormatted}}{{else}}Never{{end}}
                         </td>
-                        <td data-label="Actions">
+                        <td data-label="Actions" class="actions-cell">
+                            <div class="icon-actions">
+                            <button
+                                type="button"
+                                class="icon-btn"
+                                title="Reset password"
+                                aria-label="Reset password for {{.Username}}"
+                                onclick="openResetModal('{{.Username}}')"
+                            >
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path
+                                        d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
+                                    />
+                                </svg>
+                            </button>
+                            {{if .Expiration}}
                             <form
                                 method="post"
-                                action="/admin/reset"
-                                style="display: inline"
-                                aria-label="Reset password for {{.Username}}"
+                                action="/admin/disable-expiration"
+                                aria-label="Disable expiration for {{.Username}}"
+                                onsubmit="return confirm('Disable expiration for {{.Username}}? They will no longer expire.');"
                             >
+                                <input
+                                    type="hidden"
+                                    name="csrf_token"
+                                    value="{{$.CSRFToken}}"
+                                />
                                 <input
                                     type="hidden"
                                     name="username"
                                     value="{{.Username}}"
                                 />
-                                <input
-                                    type="password"
-                                    name="password"
-                                    placeholder="New password"
-                                    required
-                                    aria-label="New password for {{.Username}}"
-                                />
-                                <button type="submit">Reset Password</button>
+                                <button
+                                    type="submit"
+                                    class="icon-btn"
+                                    title="Disable expiration"
+                                    aria-label="Disable expiration for {{.Username}}"
+                                >
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path
+                                            d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm1-13h-2v6l5 3 1-1.73-4-2.37V7z"
+                                        />
+                                    </svg>
+                                </button>
                             </form>
+                            {{end}}
+                            <form
+                                method="post"
+                                action="/admin/delete"
+                                aria-label="Delete user {{.Username}}"
+                                onsubmit="return confirm('Delete user {{.Username}}? This cannot be undone.');"
+                            >
+                                <input
+                                    type="hidden"
+                                    name="csrf_token"
+                                    value="{{$.CSRFToken}}"
+                                />
+                                <input
+                                    type="hidden"
+                                    name="username"
+                                    value="{{.Username}}"
+                                />
+                                <button
+                                    type="submit"
+                                    class="icon-btn delete-btn"
+                                    title="Delete user"
+                                    aria-label="Delete user {{.Username}}"
+                                >
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path
+                                            d="M6 7h12v13a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7zm3 2v9h2V9H9zm4 0v9h2V9h-2zM9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1h5v2H4V4h5z"
+                                        />
+                                    </svg>
+                                </button>
+                            </form>
+                            </div>
                         </td>
                     </tr>
                     {{end}}
@@ -273,6 +407,76 @@
             >
             {{end}}
         </nav>
+
+        <dialog id="resetModal" class="modal" aria-labelledby="resetModalTitle">
+            <form
+                method="post"
+                action="/admin/reset"
+                onsubmit="return validateReset(event)"
+            >
+                <h2 id="resetModalTitle">Reset Password</h2>
+                <p>
+                    Set a new password for
+                    <strong id="resetModalUser"></strong>.
+                </p>
+                <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" />
+                <input type="hidden" name="username" id="resetModalUsername" />
+                <label for="resetModalPassword">New password</label>
+                <input
+                    type="password"
+                    id="resetModalPassword"
+                    name="password"
+                    required
+                    autocomplete="new-password"
+                />
+                <label for="resetModalConfirm">Confirm password</label>
+                <input
+                    type="password"
+                    id="resetModalConfirm"
+                    name="confirm"
+                    required
+                    autocomplete="new-password"
+                />
+                <div id="resetModalError" class="error"></div>
+                <div class="modal-actions">
+                    <button
+                        type="button"
+                        class="cancel-btn"
+                        onclick="closeResetModal()"
+                    >
+                        Cancel
+                    </button>
+                    <button type="submit">Reset Password</button>
+                </div>
+            </form>
+        </dialog>
+
+        <script>
+            function openResetModal(username) {
+                document.getElementById("resetModalUsername").value = username;
+                document.getElementById("resetModalUser").textContent = username;
+                document.getElementById("resetModalPassword").value = "";
+                document.getElementById("resetModalConfirm").value = "";
+                document.getElementById("resetModalError").textContent = "";
+                document.getElementById("resetModal").showModal();
+            }
+            function closeResetModal() {
+                document.getElementById("resetModal").close();
+            }
+            function validateReset(event) {
+                const pwd = document.getElementById("resetModalPassword").value;
+                const confirm =
+                    document.getElementById("resetModalConfirm").value;
+                const errorDiv = document.getElementById("resetModalError");
+                if (pwd !== confirm) {
+                    errorDiv.textContent = "Passwords do not match!";
+                    event.preventDefault();
+                    return false;
+                }
+                errorDiv.textContent = "";
+                return true;
+            }
+        </script>
     </body>
 </html>
 {{end}}

@@ -43,6 +43,28 @@ func (m *mockAuthStore) Search(username string) (backends.UserData, error) {
 	return ud, nil
 }
 
+func (m *mockAuthStore) SetExpiration(username string, expiration int64) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	ud, ok := m.users[username]
+	if !ok {
+		return backends.ErrUserNotFound
+	}
+	ud.Expiration = expiration
+	m.users[username] = ud
+	return nil
+}
+
+func (m *mockAuthStore) Delete(username string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if _, ok := m.users[username]; !ok {
+		return backends.ErrUserNotFound
+	}
+	delete(m.users, username)
+	return nil
+}
+
 func (m *mockAuthStore) Cleanup() error { return nil }
 func (m *mockAuthStore) Close() error   { return nil }
 func (m *mockAuthStore) ListUsers(search string, expiredOnly bool, offset, limit int) ([]backends.User, int, error) {

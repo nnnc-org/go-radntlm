@@ -324,8 +324,10 @@ func (m *mockAuthStore) Search(username string) (UserData, error) {
 	}
 	return ud, nil
 }
-func (m *mockAuthStore) Cleanup() error { return nil }
-func (m *mockAuthStore) Close() error   { return nil }
+func (m *mockAuthStore) SetExpiration(username string, expiration int64) error { return nil }
+func (m *mockAuthStore) Delete(username string) error                          { return nil }
+func (m *mockAuthStore) Cleanup() error               { return nil }
+func (m *mockAuthStore) Close() error                 { return nil }
 func (m *mockAuthStore) ListUsers(search string, expiredOnly bool, offset, limit int) ([]User, int, error) {
 	return nil, 0, nil
 }

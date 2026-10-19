@@ -79,6 +79,39 @@ func (v *VaultDB) Search(username string) (UserData, error) {
 	return u, nil
 }
 
+// SetExpiration updates the expiration for an existing user. An expiration of
+// 0 disables expiration (the user never expires).
+func (v *VaultDB) SetExpiration(username string, expiration int64) error {
+	return v.db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("users"))
+		raw := b.Get([]byte(username))
+		if raw == nil {
+			return ErrUserNotFound
+		}
+		var u UserData
+		if err := json.Unmarshal(raw, &u); err != nil {
+			return err
+		}
+		u.Expiration = expiration
+		data, err := json.Marshal(u)
+		if err != nil {
+			return err
+		}
+		return b.Put([]byte(username), data)
+	})
+}
+
+// Delete removes a user record from the database.
+func (v *VaultDB) Delete(username string) error {
+	return v.db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("users"))
+		if b.Get([]byte(username)) == nil {
+			return ErrUserNotFound
+		}
+		return b.Delete([]byte(username))
+	})
+}
+
 // Cleanup removes expired users from the database.
 func (v *VaultDB) Cleanup() error {
 	return v.db.Update(func(tx *bolt.Tx) error {
