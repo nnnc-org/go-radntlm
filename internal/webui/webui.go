@@ -43,7 +43,22 @@ func StartServer(ctx context.Context, addr string, db backends.AuthStore, samlCo
 				log.Printf("[webui] template parse error: %v", err)
 				return
 			}
-			tmpl.Execute(w, nil)
+
+			data := struct {
+				PasswordSet         bool
+				Expiration          int64
+				ExpirationFormatted string
+				Expired             bool
+			}{}
+			if ud, err := db.Search(username); err == nil && ud.Hash != "" {
+				data.PasswordSet = true
+				data.Expiration = ud.Expiration
+				if ud.Expiration != 0 {
+					data.ExpirationFormatted = time.Unix(ud.Expiration, 0).Format("2006-01-02 15:04")
+					data.Expired = ud.IsExpired()
+				}
+			}
+			tmpl.Execute(w, data)
 		case http.MethodPost:
 			if err := r.ParseForm(); err != nil {
 				http.Error(w, "Error parsing form", http.StatusBadRequest)
